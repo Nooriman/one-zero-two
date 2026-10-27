@@ -1,10 +1,12 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["pwa-icon.svg"],
@@ -15,8 +17,9 @@ export default defineConfig({
         start_url: "/",
         scope: "/",
         display: "standalone",
-        background_color: "#f4f5f0",
-        theme_color: "#f4f5f0",
+        orientation: "portrait",
+        background_color: "#1c1a18",
+        theme_color: "#1c1a18",
         icons: [
           {
             src: "/pwa-icon.svg",

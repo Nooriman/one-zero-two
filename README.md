@@ -4,6 +4,19 @@
 
 - Node.js 20.19+ or 22.12+
 - npm
+- Docker Desktop or Docker Engine with Compose
+
+## Start everything
+
+From the repository root, with Docker running:
+
+```sh
+npm run install:all   # first time only
+npm run dev           # PostgreSQL + API (backend) and Vite (frontend) together
+npm run set-code      # set a user's 6-digit access code (run once per person)
+```
+
+The sections below describe starting each part on its own.
 
 ## Start the frontend
 
@@ -18,12 +31,12 @@ npm run dev
 ```sh
 cd backend
 npm install
-Copy-Item .env.example .env
-npm run db:push
 npm run dev
 ```
 
-The API runs at `http://localhost:3000`. The Vite development server proxies `/api` requests to it. The initial Prisma schema uses SQLite; edit `backend/prisma/schema.prisma` to add models, then run `npm run db:push` to sync the local database.
+With Docker Desktop or Docker Engine running, `npm run dev` starts PostgreSQL in Docker, waits for it to become healthy, syncs the Prisma schema, then starts the API at `http://localhost:3000`. The Vite development server proxies `/api` requests to the API. The checked-in `.env.example` uses local development credentials; if you do not already have a `.env`, copy it with `Copy-Item .env.example .env`. Edit `prisma/schema.prisma` to add models. Run `npm run db:down` to stop PostgreSQL; its data persists in a Docker volume.
+
+The previous local database used SQLite. Switching the provider does not migrate existing SQLite data into PostgreSQL.
 
 ## Install on a phone
 

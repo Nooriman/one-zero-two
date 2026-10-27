@@ -1,116 +1,79 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import type { ReactElement } from "react";
+import Dashboard from "./pages/Dashboard";
+import Debt from "./pages/Debt";
 
-type HealthStatus = "checking" | "online" | "offline";
-type InstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+type NavItem = {
+  id: string;
+  label: string;
+  icon: ReactElement;
+  page: ReactElement;
 };
 
+// Max 4 items. Add a module here as it gets built.
+const NAV_ITEMS: NavItem[] = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: (
+      <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="7" height="9" rx="1.5" />
+        <rect x="14" y="3" width="7" height="5" rx="1.5" />
+        <rect x="14" y="12" width="7" height="9" rx="1.5" />
+        <rect x="3" y="16" width="7" height="5" rx="1.5" />
+      </svg>
+    ),
+    page: <Dashboard />,
+  },
+  {
+    id: "debt",
+    label: "Debt",
+    icon: (
+      <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="2" y="5" width="20" height="14" rx="2.5" />
+        <path d="M2 10h20" />
+        <path d="M6 15h4" />
+      </svg>
+    ),
+    page: <Debt />,
+  },
+];
+
 function App() {
-  const [status, setStatus] = useState<HealthStatus>("checking");
-  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(
-    null,
-  );
-  const [installMessage, setInstallMessage] = useState("");
-  const [isInstalled, setIsInstalled] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((response) => {
-        if (!response.ok) throw new Error("API request failed");
-        return response.json();
-      })
-      .then(() => setStatus("online"))
-      .catch(() => setStatus("offline"));
-  }, []);
-
-  useEffect(() => {
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as Navigator & { standalone?: boolean }).standalone === true;
-    setIsInstalled(standalone);
-
-    const handleInstallAvailable = (event: Event) => {
-      event.preventDefault();
-      setInstallPrompt(event as InstallPromptEvent);
-    };
-    const handleInstalled = () => {
-      setIsInstalled(true);
-      setInstallPrompt(null);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleInstallAvailable);
-    window.addEventListener("appinstalled", handleInstalled);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleInstallAvailable);
-      window.removeEventListener("appinstalled", handleInstalled);
-    };
-  }, []);
-
-  const handleInstall = async () => {
-    if (!installPrompt) {
-      const isAppleMobile =
-        /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-      setInstallMessage(
-        isAppleMobile
-          ? "In Safari, tap Share, then Add to Home Screen."
-          : "Open your browser menu and choose Install app or Add to Home Screen.",
-      );
-      return;
-    }
-
-    await installPrompt.prompt();
-    const choice = await installPrompt.userChoice;
-    setInstallMessage(choice.outcome === "accepted" ? "App installed." : "");
-    setInstallPrompt(null);
-  };
+  const [activeId, setActiveId] = useState(NAV_ITEMS[0].id);
+  const active = NAV_ITEMS.find((item) => item.id === activeId) ?? NAV_ITEMS[0];
 
   return (
-    <main className="shell">
-      <header className="topbar">
-        <a className="wordmark" href="/" aria-label="one-zero-two home">
-          <span className="wordmark-mark">102</span>
-          <span>one-zero-two</span>
-        </a>
-        <span className={`service-status service-status--${status}`}>
-          <span className="status-dot" />
-          API {status}
-        </span>
-      </header>
+    <div className="mx-auto flex min-h-dvh max-w-xl flex-col">
+      <main className="flex-1 px-6 pt-[env(safe-area-inset-top)] pb-24">{active.page}</main>
 
-      <section className="welcome" aria-labelledby="welcome-title">
-        <p className="eyebrow">THE WORKSPACE IS READY</p>
-        <h1 id="welcome-title">A clear start.</h1>
-        <p className="welcome-copy">
-          Your React frontend is connected to the Express API. Build from here.
-        </p>
-        <div className="stack-line">
-          <span>React</span>
-          <span className="separator">/</span>
-          <span>TypeScript</span>
-          <span className="separator">/</span>
-          <span>Vite</span>
-        </div>
-        {!isInstalled && (
-          <div className="install-area">
-            <button
-              className="install-button"
-              onClick={handleInstall}
-              type="button"
-            >
-              Install app
-            </button>
-            <p aria-live="polite" className="install-hint" role="status">
-              {installMessage}
-            </p>
-          </div>
-        )}
-      </section>
-      <footer>
-        one-zero-two <span>·</span> development environment
-      </footer>
-    </main>
+      <nav
+        aria-label="Primary"
+        className="fixed inset-x-0 bottom-0 z-10 border-t border-graphite-700 bg-graphite-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      >
+        <ul className="mx-auto flex max-w-xl">
+          {NAV_ITEMS.map((item) => {
+            const isActive = item.id === active.id;
+            return (
+              <li className="flex-1" key={item.id}>
+                <button
+                  aria-current={isActive ? "page" : undefined}
+                  className={
+                    "flex h-16 w-full flex-col items-center justify-center gap-1 text-[11px] font-semibold transition active:scale-95 " +
+                    (isActive ? "text-orange" : "text-graphite-300")
+                  }
+                  onClick={() => setActiveId(item.id)}
+                  type="button"
+                >
+                  {item.icon}
+                  {item.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </div>
   );
 }
 
