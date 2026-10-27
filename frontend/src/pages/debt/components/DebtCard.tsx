@@ -1,4 +1,4 @@
-import { formatAmount, type DebtRecord } from "./debtApi";
+import { formatAmount, type DebtRecord } from "../../../api/DebtApi";
 
 type DebtCardProps = {
   debt: DebtRecord;

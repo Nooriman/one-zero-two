@@ -1,7 +1,11 @@
 import { useState } from "react";
 import type { ReactElement } from "react";
-import Dashboard from "./pages/Dashboard";
-import Debt from "./pages/Debt";
+import Dashboard from "./pages/dashboard/Dashboard";
+import Debt from "./pages/debt/Debt";
+import Expenses from "./pages/expenses/Expenses";
+import CardIcon from "./icons/CardIcon";
+import DashboardIcon from "./icons/DashboardIcon";
+import ReceiptIcon from "./icons/ReceiptIcon";
 
 type NavItem = {
   id: string;
@@ -16,12 +20,7 @@ const NAV_ITEMS: NavItem[] = [
     id: "dashboard",
     label: "Dashboard",
     icon: (
-      <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="3" y="3" width="7" height="9" rx="1.5" />
-        <rect x="14" y="3" width="7" height="5" rx="1.5" />
-        <rect x="14" y="12" width="7" height="9" rx="1.5" />
-        <rect x="3" y="16" width="7" height="5" rx="1.5" />
-      </svg>
+      <DashboardIcon />
     ),
     page: <Dashboard />,
   },
@@ -29,13 +28,17 @@ const NAV_ITEMS: NavItem[] = [
     id: "debt",
     label: "Debt",
     icon: (
-      <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="2" y="5" width="20" height="14" rx="2.5" />
-        <path d="M2 10h20" />
-        <path d="M6 15h4" />
-      </svg>
+      <CardIcon />
     ),
     page: <Debt />,
+  },
+  {
+    id: "expenses",
+    label: "Expenses",
+    icon: (
+      <ReceiptIcon />
+    ),
+    page: <Expenses />,
   },
 ];
 

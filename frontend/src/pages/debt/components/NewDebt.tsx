@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { createDebt } from "./debtApi";
+import { createDebt } from "../../../api/DebtApi";
+import ChevronLeftIcon from "../../../icons/ChevronLeftIcon";
 
 type NewDebtProps = {
   onBack: () => void;
@@ -77,9 +78,7 @@ function NewDebt({ onBack, onCreated }: NewDebtProps) {
           onClick={onBack}
           type="button"
         >
-          <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M15 5l-7 7 7 7" />
-          </svg>
+          <ChevronLeftIcon />
         </button>
         <h1 id="new-debt-title" className="text-2xl font-semibold">
           New Debt

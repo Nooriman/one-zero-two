@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { formatAmount, getDebt, markDebtPaid, type DebtRecord } from "./debtApi";
+import { formatAmount, getDebt, markDebtPaid, type DebtRecord } from "../../../api/DebtApi";
+import ChevronLeftIcon from "../../../icons/ChevronLeftIcon";
 
 type DebtDetailProps = {
   id: number;
@@ -38,9 +39,7 @@ function DebtDetail({ id, onBack }: DebtDetailProps) {
           onClick={onBack}
           type="button"
         >
-          <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M15 5l-7 7 7 7" />
-          </svg>
+          <ChevronLeftIcon />
         </button>
         <h1 id="debt-detail-title" className="text-2xl font-semibold">
           Debt

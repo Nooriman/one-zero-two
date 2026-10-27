@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import axios from "axios";
 
 type AuthState = "checking" | "locked" | "unlocked";
 
@@ -9,9 +10,9 @@ export default function AccessGate({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/session", { credentials: "same-origin" })
-      .then((response) => response.json())
-      .then((body) => setState(body.authenticated ? "unlocked" : "locked"))
+    axios
+      .get("/api/auth/session", { withCredentials: true })
+      .then((response) => setState(response.data.authenticated ? "unlocked" : "locked"))
       .catch(() => setState("locked"));
   }, []);
 
@@ -21,21 +22,15 @@ export default function AccessGate({ children }: { children: ReactNode }) {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
-      if (response.ok) {
-        setState("unlocked");
-        return;
+      await axios.post("/api/auth/login", { code }, { withCredentials: true });
+      setState("unlocked");
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        setError(error.response.data?.error ?? "Something went wrong.");
+        setCode("");
+      } else {
+        setError("Cannot reach the server.");
       }
-      const body = await response.json().catch(() => ({}));
-      setError(body.error ?? "Something went wrong.");
-      setCode("");
-    } catch {
-      setError("Cannot reach the server.");
     } finally {
       setBusy(false);
     }
