@@ -1,10 +1,11 @@
 import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 
 const KEY_LENGTH = 64;
-// N=2^15 (~32 MB, ~100 ms): a 6-digit code has only 1M values, so make each guess costly.
+// N=2^15 (~32 MB, ~100 ms): a numeric code has a small search space, so make each guess costly.
 const SCRYPT = { N: 32768, r: 8, p: 1, maxmem: 128 * 1024 * 1024 };
 
-export const CODE_PATTERN = /^\d{6}$/;
+export const CODE_LENGTH = 8;
+export const CODE_PATTERN = new RegExp(`^\\d{${CODE_LENGTH}}$`);
 
 function derive(code: string, salt: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {

@@ -1,10 +1,12 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { prisma } from "../lib/prisma.js";
-import { CODE_PATTERN, hashToken, newSessionToken, verifyCode } from "./crypto.js";
+import { CODE_LENGTH, CODE_PATTERN, hashToken, newSessionToken, verifyCode } from "./crypto.js";
 import { clearFailures, recordFailure, retryAfter } from "./rateLimit.js";
 
 const COOKIE = "session";
-const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
+// How long a login lasts before the code is needed again. Override with SESSION_HOURS.
+const SESSION_HOURS = Number(process.env.SESSION_HOURS) > 0 ? Number(process.env.SESSION_HOURS) : 24;
+const SESSION_MS = SESSION_HOURS * 60 * 60 * 1000;
 const secure = process.env.NODE_ENV === "production";
 
 function readCookie(request: Request, name: string) {
@@ -61,7 +63,7 @@ authRouter.post("/login", async (request, response) => {
 
   const code: unknown = request.body?.code;
   if (typeof code !== "string" || !CODE_PATTERN.test(code)) {
-    return response.status(400).json({ error: "Enter a 6-digit code." });
+    return response.status(400).json({ error: `Enter an ${CODE_LENGTH}-digit code.` });
   }
 
   const users = await prisma.user.findMany();

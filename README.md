@@ -13,7 +13,7 @@ From the repository root, with Docker running:
 ```sh
 npm run install:all   # first time only
 npm run dev           # PostgreSQL + API (backend) and Vite (frontend) together
-npm run set-code      # set a user's 6-digit access code (run once per person)
+npm run set-code      # set a user's 8-digit access code (run once per person)
 ```
 
 The sections below describe starting each part on its own.

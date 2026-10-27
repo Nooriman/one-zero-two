@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createInterface } from "node:readline/promises";
 import { Writable } from "node:stream";
-import { CODE_PATTERN, hashCode, verifyCode } from "../src/auth/crypto.js";
+import { CODE_LENGTH, CODE_PATTERN, hashCode, verifyCode } from "../src/auth/crypto.js";
 import { prisma } from "../src/lib/prisma.js";
 
 const MAX_USERS = 2;
@@ -33,11 +33,11 @@ if (!current && existing.length >= MAX_USERS) {
   fail(`Only ${MAX_USERS} users are allowed. Use one of the existing names.`);
 }
 
-const code = await askHidden("6-digit access code: ");
+const code = await askHidden(`${CODE_LENGTH}-digit access code: `);
 const confirm = await askHidden("Repeat the code: ");
 rl.close();
 
-if (!CODE_PATTERN.test(code)) fail("Code must be exactly 6 digits.");
+if (!CODE_PATTERN.test(code)) fail(`Code must be exactly ${CODE_LENGTH} digits.`);
 if (code !== confirm) fail("Codes do not match.");
 
 // Login identifies the user by the code alone, so two users can't share one.

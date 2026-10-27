@@ -1,5 +1,9 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import axios from "axios";
+import { lock } from "./lib/vault";
+
+// Keep in sync with CODE_LENGTH in backend/src/auth/crypto.ts.
+const CODE_LENGTH = 8;
 
 type AuthState = "checking" | "locked" | "unlocked";
 
@@ -16,9 +20,39 @@ export default function AccessGate({ children }: { children: ReactNode }) {
       .catch(() => setState("locked"));
   }, []);
 
+  // Sessions expire, so keep checking while the app is open and return to the code screen
+  // (locking the document vault too) rather than leaving pages failing with "Unauthorized".
+  useEffect(() => {
+    if (state !== "unlocked") return;
+    const check = () =>
+      axios
+        .get("/api/auth/session", { withCredentials: true })
+        .then((response) => {
+          if (!response.data.authenticated) expire();
+        })
+        // A network error says nothing about the session; only an explicit answer counts.
+        .catch((error) => {
+          if (axios.isAxiosError(error) && error.response?.status === 401) expire();
+        });
+    const expire = () => {
+      lock();
+      setCode("");
+      setState("locked");
+    };
+    const onVisible = () => {
+      if (!document.hidden) void check();
+    };
+    const timer = window.setInterval(check, 60_000);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [state]);
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (code.length !== 6 || busy) return;
+    if (code.length !== CODE_LENGTH || busy) return;
     setBusy(true);
     setError("");
     try {
@@ -50,20 +84,20 @@ export default function AccessGate({ children }: { children: ReactNode }) {
         </span>
         <h1 className="text-xl font-semibold">Enter access code</h1>
         <input
-          aria-label="6-digit access code"
+          aria-label={`${CODE_LENGTH}-digit access code`}
           autoComplete="one-time-code"
           autoFocus
-          className="w-full rounded-2xl border border-graphite-700 bg-graphite-900 py-4 text-center indent-[0.4em] text-3xl tracking-[0.4em] outline-none transition-colors focus:border-orange"
+          className="w-full rounded-2xl border border-graphite-700 bg-graphite-900 py-4 text-center indent-[0.25em] text-3xl tracking-[0.25em] outline-none transition-colors focus:border-orange"
           inputMode="numeric"
-          maxLength={6}
+          maxLength={CODE_LENGTH}
           onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
-          pattern="\d{6}"
+          pattern={`\\d{${CODE_LENGTH}}`}
           type="password"
           value={code}
         />
         <button
           className="h-14 w-full rounded-2xl bg-orange text-base font-bold text-graphite-950 transition active:scale-[0.98] active:bg-orange-deep disabled:bg-graphite-700 disabled:text-graphite-300"
-          disabled={code.length !== 6 || busy}
+          disabled={code.length !== CODE_LENGTH || busy}
           type="submit"
         >
           {busy ? "Checking…" : "Unlock"}
