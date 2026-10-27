@@ -35,6 +35,7 @@
     "@prisma/client@6.19.3": true,
     "esbuild@0.28.2": true,
     "@prisma/engines@7.10.1": true,
-    "prisma@7.10.1": true
+    "prisma@7.10.1": true,
+    "fsevents@2.3.3": true
   }
 }
