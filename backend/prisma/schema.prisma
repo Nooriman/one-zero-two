@@ -25,13 +25,15 @@ model User {
   @@map("users")
 }
 
-/// A titled note/document owned by the logged-in user.
+/// A titled note/document about one family member; shared by both logins (userId is the author).
 model Document {
   id        Int      @id @default(autoincrement())
   userId    Int      @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  content   String   @default("")
+  /// Which family member this is for; validated against the allowlist in the API.
+  member    String
+  /// End-to-end encrypted JSON {title, content} ("v1.<base64>"); the server never sees the key or plaintext.
+  data      String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -101,4 +103,16 @@ model Session {
   @@index([expiresAt])
   @@index([userId])
   @@map("sessions")
+}
+
+/// The household vault: KDF parameters and a check value so the client can verify a passphrase.
+/// A single row (id 1) shared by both logins. The passphrase itself never reaches the server.
+model Vault {
+  id         Int      @id
+  salt       String
+  iterations Int
+  check      String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("vault")
 }

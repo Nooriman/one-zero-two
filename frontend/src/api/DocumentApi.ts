@@ -1,14 +1,15 @@
 import axios, { type AxiosRequestConfig } from "axios";
 
+/** As stored: `data` is the end-to-end encrypted title and content. */
 export type DocumentRecord = {
   id: number;
-  title: string;
-  content: string;
+  member: string;
+  data: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export type DocumentInput = { title: string; content: string };
+export type DocumentInput = { member: string; data: string };
 
 const client = axios.create({
   baseURL: "/api/documents",

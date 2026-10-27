@@ -3,38 +3,42 @@ import type { Document } from "@prisma/client";
 import { requireAuth } from "../auth/routes.js";
 import { prisma } from "../lib/prisma.js";
 
-const TITLE_MAX = 120;
-const CONTENT_MAX = 3000;
+/** Everyone documents can be about; must match the list in the frontend. */
+export const FAMILY = ["iman", "lily", "lola", "luffy"] as const;
+
+// Ciphertext is "v1." + base64 of IV and AES-GCM output; 3000 characters of 4-byte text fits well within this.
+const DATA_MAX = 24_000;
+const DATA_PATTERN = /^v1\.[A-Za-z0-9+/_=-]+$/;
 
 function serialize(document: Document) {
   return {
     id: document.id,
-    title: document.title,
-    content: document.content,
+    member: document.member,
+    data: document.data,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
   };
 }
 
-/** Validate a title/content pair; returns the clean values or an error message. */
-function parseInput(body: unknown): { title: string; content: string } | { error: string } {
-  const { title, content } = (body ?? {}) as Record<string, unknown>;
+/** Validate member + encrypted payload; the server cannot (and should not) look inside the payload. */
+function parseInput(body: unknown): { member: string; data: string } | { error: string } {
+  const { member, data } = (body ?? {}) as Record<string, unknown>;
 
-  if (typeof title !== "string" || !title.trim() || title.trim().length > TITLE_MAX) {
-    return { error: `Enter a title (up to ${TITLE_MAX} characters).` };
+  if (typeof member !== "string" || !(FAMILY as readonly string[]).includes(member)) {
+    return { error: "Choose a family member." };
   }
-  if (content !== undefined && (typeof content !== "string" || content.length > CONTENT_MAX)) {
-    return { error: `Content is limited to ${CONTENT_MAX} characters.` };
+  if (typeof data !== "string" || data.length > DATA_MAX || !DATA_PATTERN.test(data)) {
+    return { error: "Invalid document data." };
   }
-  return { title: title.trim(), content: (content as string | undefined) ?? "" };
+  return { member, data };
 }
 
 export const documentsRouter = Router();
 documentsRouter.use(requireAuth);
 
 documentsRouter.get("/", async (_request, response) => {
+  // Documents are shared by both logins, so they are not filtered by user.
   const documents = await prisma.document.findMany({
-    where: { userId: response.locals.user.id },
     orderBy: { updatedAt: "desc" },
   });
   response.json(documents.map(serialize));
@@ -55,9 +59,8 @@ documentsRouter.patch("/:id", async (request, response) => {
   const input = parseInput(request.body);
   if ("error" in input) return response.status(400).json({ error: input.error });
 
-  // Scoped by userId so one user can never touch another's document.
-  const result = Number.isInteger(id)
-    ? await prisma.document.updateMany({ where: { id, userId: response.locals.user.id }, data: input })
+    const result = Number.isInteger(id)
+    ? await prisma.document.updateMany({ where: { id }, data: input })
     : { count: 0 };
   if (result.count === 0) return response.status(404).json({ error: "Document not found." });
 
@@ -68,7 +71,7 @@ documentsRouter.patch("/:id", async (request, response) => {
 documentsRouter.delete("/:id", async (request, response) => {
   const id = Number(request.params.id);
   const result = Number.isInteger(id)
-    ? await prisma.document.deleteMany({ where: { id, userId: response.locals.user.id } })
+    ? await prisma.document.deleteMany({ where: { id } })
     : { count: 0 };
   if (result.count === 0) return response.status(404).json({ error: "Document not found." });
   response.status(204).end();
