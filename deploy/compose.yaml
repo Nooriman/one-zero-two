@@ -1,0 +1,58 @@
+# Production stack for one small server: Caddy (HTTPS + frontend) -> API -> Postgres.
+# Only Caddy publishes ports; Postgres and the API are reachable only inside this network.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: onezerotwo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: onezerotwo
+    # Small settings for a 1 GB server.
+    command: postgres -c shared_buffers=64MB -c max_connections=20 -c work_mem=4MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onezerotwo -d onezerotwo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Caddy is the only proxy in front of the API, so trust its forwarded client address.
+      TRUST_PROXY: "1"
+      # Hours a login lasts before the access code is asked again.
+      SESSION_HOURS: ${SESSION_HOURS:-24}
+      DATABASE_URL: postgresql://onezerotwo:${POSTGRES_PASSWORD}@db:5432/onezerotwo?schema=public
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in deploy/.env}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

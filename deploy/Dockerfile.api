@@ -1,0 +1,16 @@
+# Build context is the repo root (see compose.yaml).
+FROM node:22-slim
+# Prisma's schema engine needs OpenSSL.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY backend/package*.json ./
+RUN npm ci
+COPY backend/ ./
+# prisma.config.ts insists on DATABASE_URL even though generate never connects; the real one is set at runtime.
+RUN DATABASE_URL=postgresql://build:build@localhost:5432/build npx prisma generate && npx tsc
+ENV NODE_ENV=production
+USER node
+EXPOSE 3000
+# db push applies schema changes and refuses (instead of dropping data) if a change would lose rows.
+CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
