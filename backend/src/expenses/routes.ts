@@ -12,6 +12,7 @@ function serialize(expense: Expense) {
     description: expense.description,
     amount: expense.amount.toString(),
     createdAt: expense.createdAt,
+    liabilityId: expense.liabilityId,
   };
 }
 
@@ -32,9 +33,21 @@ function parseInput(body: unknown): { description: string; amount: string } | { 
 export const expensesRouter = Router();
 expensesRouter.use(requireAuth);
 
-expensesRouter.get("/", async (_request, response) => {
+/** Parse an optional ISO date query/body value; undefined when absent, null when invalid. */
+function parseDate(value: unknown): Date | undefined | null {
+  if (value === undefined) return undefined;
+  const date = typeof value === "string" ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date : null;
+}
+
+// Optional ?from=&to= (ISO instants) limit the list to [from, to), e.g. one month.
+expensesRouter.get("/", async (request, response) => {
+  const from = parseDate(request.query.from);
+  const to = parseDate(request.query.to);
+  if (from === null || to === null) return response.status(400).json({ error: "Invalid date range." });
+
   const expenses = await prisma.expense.findMany({
-    where: { userId: response.locals.user.id },
+    where: { userId: response.locals.user.id, createdAt: { gte: from, lt: to } },
     orderBy: { createdAt: "desc" },
   });
   response.json(expenses.map(serialize));
@@ -44,32 +57,23 @@ expensesRouter.post("/", async (request, response) => {
   const input = parseInput(request.body);
   if ("error" in input) return response.status(400).json({ error: input.error });
 
+  // Optional createdAt lets an expense be logged into a past month being viewed.
+  const createdAt = parseDate((request.body ?? {}).createdAt);
+  if (createdAt === null || (createdAt && createdAt.getTime() > Date.now() + 86_400_000)) {
+    return response.status(400).json({ error: "Invalid date." });
+  }
+
+  // Optional liabilityId marks this expense as that liability's payment; it must be the user's own.
+  const { liabilityId } = (request.body ?? {}) as { liabilityId?: unknown };
+  if (liabilityId !== undefined) {
+    const owned =
+      Number.isInteger(liabilityId) &&
+      (await prisma.liability.count({ where: { id: liabilityId as number, userId: response.locals.user.id } }));
+    if (!owned) return response.status(400).json({ error: "Liability not found." });
+  }
+
   const expense = await prisma.expense.create({
-    data: { userId: response.locals.user.id, ...input },
+    data: { userId: response.locals.user.id, ...input, createdAt, liabilityId: liabilityId as number | undefined },
   });
   response.status(201).json(serialize(expense));
-});
-
-expensesRouter.patch("/:id", async (request, response) => {
-  const id = Number(request.params.id);
-  const input = parseInput(request.body);
-  if ("error" in input) return response.status(400).json({ error: input.error });
-
-  // Scoped by userId so one user can never touch another's expense.
-  const result = Number.isInteger(id)
-    ? await prisma.expense.updateMany({ where: { id, userId: response.locals.user.id }, data: input })
-    : { count: 0 };
-  if (result.count === 0) return response.status(404).json({ error: "Expense not found." });
-
-  const expense = await prisma.expense.findUniqueOrThrow({ where: { id } });
-  response.json(serialize(expense));
-});
-
-expensesRouter.delete("/:id", async (request, response) => {
-  const id = Number(request.params.id);
-  const result = Number.isInteger(id)
-    ? await prisma.expense.deleteMany({ where: { id, userId: response.locals.user.id } })
-    : { count: 0 };
-  if (result.count === 0) return response.status(404).json({ error: "Expense not found." });
-  response.status(204).end();
 });

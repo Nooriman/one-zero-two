@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { Debt } from "@prisma/client";
+import { Prisma, type Debt } from "@prisma/client";
 import { requireAuth } from "../auth/routes.js";
 import { prisma } from "../lib/prisma.js";
 
@@ -73,4 +73,37 @@ debtsRouter.post("/:id/paid", async (request, response) => {
 
   const updated = await prisma.debt.update({ where: { id }, data: { paidAt: new Date() } });
   response.json(serialize(updated));
+});
+
+/** Pay down a debt: reduces it, marks it paid at zero, and logs the payment as an expense, atomically. */
+debtsRouter.post("/:id/payment", async (request, response) => {
+  const id = Number(request.params.id);
+  const value = Number((request.body ?? {}).amount);
+  if (!Number.isFinite(value) || value <= 0 || value > AMOUNT_MAX) {
+    return response.status(400).json({ error: "Enter a valid amount." });
+  }
+  const paying = new Prisma.Decimal(value.toFixed(2));
+  const userId = response.locals.user.id;
+
+  const result = await prisma.$transaction(async (tx) => {
+    const debt = Number.isInteger(id) ? await tx.debt.findFirst({ where: { id, userId } }) : null;
+    if (!debt) return { status: 404, error: "Debt not found." } as const;
+    if (debt.paidAt) return { status: 400, error: "This debt is already paid." } as const;
+    if (paying.greaterThan(debt.amount)) {
+      return { status: 400, error: "Payment is more than the remaining debt." } as const;
+    }
+
+    const remaining = debt.amount.minus(paying);
+    const updated = await tx.debt.update({
+      where: { id },
+      data: { amount: remaining, paidAt: remaining.isZero() ? new Date() : null },
+    });
+    await tx.expense.create({
+      data: { userId, description: `Debt: ${debt.person}`, amount: paying },
+    });
+    return { status: 200, debt: updated } as const;
+  });
+
+  if ("error" in result) return response.status(result.status).json({ error: result.error });
+  response.json(serialize(result.debt));
 });

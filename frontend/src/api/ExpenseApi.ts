@@ -5,9 +5,10 @@ export type ExpenseRecord = {
   description: string;
   amount: string;
   createdAt: string;
+  liabilityId: number | null;
 };
 
-export type ExpenseInput = { description: string; amount: string };
+export type ExpenseInput = { description: string; amount: string; createdAt?: string; liabilityId?: number };
 
 const client = axios.create({
   baseURL: "/api/expenses",
@@ -27,12 +28,12 @@ async function request<T>(config: AxiosRequestConfig): Promise<T> {
   }
 }
 
-export const listExpenses = () => request<ExpenseRecord[]>({ url: "" });
+/** Expenses with createdAt in [from, to). */
+export const listExpenses = (range?: { from: Date; to: Date }) =>
+  request<ExpenseRecord[]>({
+    url: "",
+    params: range && { from: range.from.toISOString(), to: range.to.toISOString() },
+  });
 
 export const createExpense = (input: ExpenseInput) =>
   request<ExpenseRecord>({ url: "", method: "POST", data: input });
-
-export const updateExpense = (id: number, input: ExpenseInput) =>
-  request<ExpenseRecord>({ url: `/${id}`, method: "PATCH", data: input });
-
-export const deleteExpense = (id: number) => request<void>({ url: `/${id}`, method: "DELETE" });

@@ -39,3 +39,7 @@ export const markDebtPaid = (id: number) =>
 
 export const formatAmount = (amount: string) =>
   "$" + Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** Pay part or all of a debt; also logs an expense. Marks the debt paid when it reaches zero. */
+export const payDebt = (id: number, amount: string) =>
+  request<DebtRecord>({ url: `/${id}/payment`, method: "POST", data: { amount } });
