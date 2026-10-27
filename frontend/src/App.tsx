@@ -2,9 +2,11 @@ import { useState } from "react";
 import type { ReactElement } from "react";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Debt from "./pages/debt/Debt";
+import Documents from "./pages/documents/Documents";
 import Expenses from "./pages/expenses/Expenses";
 import CardIcon from "./icons/CardIcon";
 import DashboardIcon from "./icons/DashboardIcon";
+import DocumentIcon from "./icons/DocumentIcon";
 import ReceiptIcon from "./icons/ReceiptIcon";
 
 type NavItem = {
@@ -39,6 +41,14 @@ const NAV_ITEMS: NavItem[] = [
       <ReceiptIcon />
     ),
     page: <Expenses />,
+  },
+  {
+    id: "documents",
+    label: "Documents",
+    icon: (
+      <DocumentIcon />
+    ),
+    page: <Documents />,
   },
 ];
 

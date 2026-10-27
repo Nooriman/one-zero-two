@@ -16,8 +16,37 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   sessions  Session[]
   debts     Debt[]
+  expenses  Expense[]
+  documents Document[]
 
   @@map("users")
+}
+
+/// A titled note/document owned by the logged-in user.
+model Document {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, updatedAt])
+  @@map("documents")
+}
+
+/// An expense owned by the logged-in user.
+model Expense {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  description String   @default("")
+  amount      Decimal  @db.Decimal(12, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@map("expenses")
 }
 
 /// A debt the logged-in user owes to someone ("Me -> person").

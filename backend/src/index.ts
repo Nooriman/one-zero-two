@@ -3,6 +3,8 @@ import cors from "cors";
 import express from "express";
 import { authRouter } from "./auth/routes.js";
 import { debtsRouter } from "./debts/routes.js";
+import { documentsRouter } from "./documents/routes.js";
+import { expensesRouter } from "./expenses/routes.js";
 import { prisma } from "./lib/prisma.js";
 
 const app = express();
@@ -13,6 +15,8 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || false, credentials: true }));
 app.use(express.json({ limit: "4kb" }));
 app.use("/api/auth", authRouter);
 app.use("/api/debts", debtsRouter);
+app.use("/api/expenses", expensesRouter);
+app.use("/api/documents", documentsRouter);
 
 app.get("/api/health", async (_request, response) => {
   try {
