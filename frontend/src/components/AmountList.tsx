@@ -150,8 +150,8 @@ function AmountList({ title, noun, list, create, update: updateRow, remove, head
 
   return (
     <section
-      // Fill the screen between the top inset and the bottom nav (main reserves 6rem below), so the page itself never scrolls.
-      className={"animate-arrive" + (scrollList ? " flex h-[calc(100dvh-env(safe-area-inset-top)-6rem)] flex-col" : "")}
+      // Fill the screen between the top inset and the bottom nav (main reserves 6.5rem plus the bottom inset below), so the page itself never scrolls.
+      className={"animate-arrive" + (scrollList ? " flex h-[calc(100dvh-env(safe-area-inset-top)-6.5rem-env(safe-area-inset-bottom))] flex-col" : "")}
       aria-labelledby="amount-list-title"
     >
       <header className="flex h-16 items-center justify-between">

@@ -215,8 +215,8 @@ function SalaryIn({ onBack }: { onBack: () => void }) {
         </p>
       )}
 
-      {/* Sticks just above the bottom nav (h-16 + border + safe area) and otherwise follows the list. */}
-      <div className="sticky bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 -mx-6 mt-4 bg-graphite-950/95 px-6 py-2 backdrop-blur">
+      {/* Sticks just above the floating bottom nav (4rem bar + 0.75rem gap + bottom inset) and otherwise follows the list. */}
+      <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-10 -mx-6 mt-4 bg-graphite-950/95 px-6 py-2 backdrop-blur">
         <button
           className="h-12 w-full rounded-xl bg-orange text-sm font-semibold text-white transition active:scale-95 disabled:opacity-40"
           disabled={busy || count === 0 || !liabilities || !debtsValid}

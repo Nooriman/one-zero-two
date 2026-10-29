@@ -58,28 +58,30 @@ function App() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-xl flex-col">
-      <main className="flex-1 px-6 pt-[env(safe-area-inset-top)] pb-24">{active.page}</main>
+      {/* pb reserves room for the floating nav: 3rem bar + 0.75rem gap + 1.75rem breathing space + bottom inset. */}
+      <main className="flex-1 px-6 pt-[env(safe-area-inset-top)] pb-[calc(5.5rem+env(safe-area-inset-bottom))]">{active.page}</main>
 
       <nav
         aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-10 border-t border-graphite-700 bg-graphite-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
       >
-        <ul className="mx-auto flex max-w-xl">
+        <ul className="pointer-events-auto mx-auto flex max-w-xl overflow-hidden rounded-3xl border border-graphite-700 bg-graphite-900/95 shadow-lg shadow-black/40 backdrop-blur">
           {NAV_ITEMS.map((item) => {
             const isActive = item.id === active.id;
             return (
               <li className="flex-1" key={item.id}>
                 <button
                   aria-current={isActive ? "page" : undefined}
+                  aria-label={item.label}
                   className={
-                    "flex h-16 w-full flex-col items-center justify-center gap-1 text-[11px] font-semibold transition active:scale-95 " +
+                    "flex h-12 w-full items-center justify-center transition active:scale-95 " +
                     (isActive ? "text-orange" : "text-graphite-300")
                   }
                   onClick={() => setActiveId(item.id)}
+                  title={item.label}
                   type="button"
                 >
                   {item.icon}
-                  {item.label}
                 </button>
               </li>
             );
